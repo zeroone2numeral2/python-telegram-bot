@@ -26,7 +26,7 @@ import pytest
 from telegram import TelegramError, Message, User, Chat, Update, Bot, MessageEntity
 from telegram.ext import (MessageHandler, Filters, CommandHandler, CallbackContext,
                           JobQueue, BasePersistence)
-from telegram.ext.dispatcher import run_async, Dispatcher, DispatcherHandlerStop
+from telegram.ext.dispatcher import run_async, Dispatcher, DispatcherHandlerStop, DispatcherHandlerContinue
 from telegram.utils.deprecate import TelegramDeprecationWarning
 from tests.conftest import create_dp
 from collections import defaultdict
@@ -276,6 +276,37 @@ class TestDispatcher(object):
         dp.add_handler(CommandHandler('start', start2), 2)
         dp.process_update(update)
         assert passed == ['start1']
+
+    def test_flow_continue(self, dp, bot):
+        passed = []
+
+        def start1(b, u):
+            passed.append('start1')
+
+        def start2(b, u):
+            passed.append('start2')
+            raise DispatcherHandlerContinue
+
+        def start3(b, u):
+            passed.append('start3')
+
+        def error(b, u, e):
+            passed.append('error')
+            passed.append(e)
+
+        update = Update(1, message=Message(1, None, None, None, text='/start',
+                                           entities=[MessageEntity(type=MessageEntity.BOT_COMMAND,
+                                                                   offset=0,
+                                                                   length=len('/start'))],
+                                           bot=bot))
+
+        # If Stop raised handlers in other groups should not be called.
+        passed = []
+        dp.add_handler(CommandHandler('start', start1), 1)
+        dp.add_handler(CommandHandler('start', start3), 1)
+        dp.add_handler(CommandHandler('start', start2), 2)
+        dp.process_update(update)
+        assert passed == ['start1', 'start2', 'start3']
 
     def test_exception_in_handler(self, dp, bot):
         passed = []

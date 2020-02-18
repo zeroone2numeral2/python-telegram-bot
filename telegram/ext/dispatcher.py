@@ -67,6 +67,11 @@ class DispatcherHandlerStop(Exception):
     pass
 
 
+class DispatcherHandlerContinue(Exception):
+    """Raise this in handler to force the update check of other handler in the same group."""
+    pass
+
+
 class Dispatcher(object):
     """This class dispatches all kinds of updates to its registered handlers.
 
@@ -387,7 +392,13 @@ class Dispatcher(object):
                     if check is not None and check is not False:
                         if not context and self.use_context:
                             context = CallbackContext.from_update(update, self)
-                        handler.handle_update(update, self, check, context)
+
+                        try:
+                            handler.handle_update(update, self, check, context)
+                        except DispatcherHandlerContinue:
+                            persist_update(update)
+                            continue
+
                         persist_update(update)
                         break
 
