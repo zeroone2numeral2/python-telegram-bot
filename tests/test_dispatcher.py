@@ -300,11 +300,11 @@ class TestDispatcher(object):
                                                                    length=len('/start'))],
                                            bot=bot))
 
-        # If Stop raised handlers in other groups should not be called.
+        # If Continue raised handlers in the same group should be called.
         passed = []
         dp.add_handler(CommandHandler('start', start1), 1)
+        dp.add_handler(CommandHandler('start', start2), 1)
         dp.add_handler(CommandHandler('start', start3), 1)
-        dp.add_handler(CommandHandler('start', start2), 2)
         dp.process_update(update)
         assert passed == ['start1', 'start2', 'start3']
 
