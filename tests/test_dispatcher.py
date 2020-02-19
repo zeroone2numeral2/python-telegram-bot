@@ -282,6 +282,7 @@ class TestDispatcher(object):
 
         def start1(b, u):
             passed.append('start1')
+            raise DispatcherHandlerContinue
 
         def start2(b, u):
             passed.append('start2')
